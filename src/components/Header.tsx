@@ -15,7 +15,7 @@ export function Header({ dark, slogan, visitors, activeJobs, currentLogin, onLog
     <header className="header">
       <div className="header-top">
         <div className="logo" onClick={onToggleTheme}>
-          Задашка
+          Задашка от Валерки
           <button className="theme-toggle" id="theme-icon">
             {dark ? '☀️' : '🌙'}
           </button>
