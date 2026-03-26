@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 interface HeaderProps {
@@ -11,34 +12,82 @@ interface HeaderProps {
 }
 
 export function Header({ dark, slogan, visitors, activeJobs, currentLogin, onLogout, onToggleTheme }: HeaderProps) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, []);
+
+  const closeMenu = () => {
+    setIsMenuOpen(false);
+  };
+
   return (
     <header className="header">
       <div className="header-top">
-        <div className="logo" onClick={onToggleTheme}>
-          Задашка от Валерки
-          <button className="theme-toggle" id="theme-icon">
-            {dark ? '☀️' : '🌙'}
-          </button>
+        <div className="header-spacer" />
+        <div className="header-brand">
+          <div className="brand-title-row">
+            <div className="logo">Задашка</div>
+            <button type="button" className="theme-toggle header-theme-toggle" id="theme-icon" onClick={onToggleTheme}>
+              {dark ? '☀️' : '🌙'}
+            </button>
+          </div>
+          <p className="brand-subtitle">Фриланс биржа</p>
         </div>
-        <nav className="header-auth">
-          {currentLogin ? (
-            <>
-              <span className="auth-user">👤 {currentLogin}</span>
-              <button type="button" className="auth-btn auth-btn--ghost" onClick={onLogout}>
-                Выйти
-              </button>
-            </>
-          ) : (
-            <>
-              <Link className="auth-btn auth-btn--ghost" to="/login">
-                Вход
+        <div className="header-menu" ref={menuRef}>
+          <button
+            type="button"
+            className="burger-btn"
+            aria-label="Открыть меню"
+            aria-expanded={isMenuOpen}
+            onClick={() => setIsMenuOpen((prev) => !prev)}
+          >
+            <span className="burger-line" />
+            <span className="burger-line" />
+            <span className="burger-line" />
+          </button>
+          <nav className={`header-auth-menu${isMenuOpen ? ' header-auth-menu--open' : ''}`} aria-hidden={!isMenuOpen}>
+            {currentLogin ? (
+              <>
+                <span className="auth-user">👤 {currentLogin}</span>
+                <button
+                  type="button"
+                  className="auth-btn auth-btn--ghost"
+                  onClick={() => {
+                    closeMenu();
+                    onLogout();
+                  }}
+                >
+                  Выйти
+                </button>
+              </>
+            ) : (
+              <Link className="auth-btn auth-btn--ghost" to="/login" onClick={closeMenu}>
+                Авторизация
               </Link>
-              <Link className="auth-btn auth-btn--primary" to="/register">
-                Регистрация
-              </Link>
-            </>
-          )}
-        </nav>
+            )}
+          </nav>
+        </div>
       </div>
       <p className="subtitle" id="rotating-slogan">
         {slogan}
