@@ -10,13 +10,21 @@ interface JobCardProps {
 export function JobCard({ job, onOpenImage, onRespond }: JobCardProps) {
   const contact = job.public_contacts || job.email || '';
   const type = detectContactType(contact);
+  const apiBase = import.meta.env.VITE_API_BASE_URL ?? '';
+  const normalizedApiBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
+  const imageSrc = (() => {
+    if (!job.image) return null;
+    if (job.image.startsWith('http://') || job.image.startsWith('https://')) return job.image;
+    if (job.image.startsWith('/')) return `${normalizedApiBase}${job.image}`;
+    return `${normalizedApiBase}/${job.image}`;
+  })();
 
   return (
     <article className="job-item">
       <div className="job-content">
-        {job.image ? (
+        {imageSrc ? (
           <div className="job-thumbnail">
-            <img src={job.image} alt="Изображение задания" className="job-img" onClick={() => onOpenImage(job.image ?? null)} />
+            <img src={imageSrc} alt="Изображение задания" className="job-img" onClick={() => onOpenImage(imageSrc)} />
           </div>
         ) : null}
         <div className="job-text">{job.text}</div>
