@@ -194,22 +194,36 @@ function App() {
   const PaymentResultPage = () => {
     const [searchParams] = useSearchParams();
     const paymentId = searchParams.get('payment_id');
-    const [status, setStatus] = useState<'loading' | 'active' | 'not_found' | 'missing' | 'error'>('loading');
+    const [status, setStatus] = useState<'loading' | 'active' | 'waiting_payment' | 'not_found' | 'missing' | 'error'>('loading');
 
     useEffect(() => {
+      let cancelled = false;
       const checkPayment = async () => {
         if (!paymentId) {
           setStatus('missing');
           return;
         }
         try {
-          const result = await confirmPayment(paymentId);
-          setStatus(result.status);
+          for (let attempt = 0; attempt < 20; attempt += 1) {
+            const result = await confirmPayment(paymentId);
+            if (cancelled) return;
+            if (result.status === 'active' || result.status === 'not_found') {
+              setStatus(result.status);
+              return;
+            }
+            setStatus('waiting_payment');
+            await new Promise((resolve) => window.setTimeout(resolve, 2500));
+          }
+          setStatus('waiting_payment');
         } catch {
+          if (cancelled) return;
           setStatus('error');
         }
       };
       void checkPayment();
+      return () => {
+        cancelled = true;
+      };
     }, [paymentId]);
 
     return (
@@ -226,6 +240,7 @@ function App() {
         <div className="card">
           {status === 'loading' ? <p>Проверяем статус оплаты...</p> : null}
           {status === 'active' ? <p>Оплата прошла успешно. Объявление опубликовано в ленте.</p> : null}
+          {status === 'waiting_payment' ? <p>Оплата еще не подтверждена. Если вы оплатили, подождите несколько секунд.</p> : null}
           {status === 'not_found' ? <p>Платеж не найден. Попробуйте оплатить снова или обратитесь в поддержку.</p> : null}
           {status === 'missing' ? <p>Не найден идентификатор платежа в ссылке возврата.</p> : null}
           {status === 'error' ? <p>Не удалось проверить оплату. Проверьте соединение и попробуйте позже.</p> : null}
