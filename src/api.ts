@@ -61,6 +61,11 @@ export async function createPayment(payload: {
   );
 }
 
+export async function confirmPayment(paymentId: string): Promise<{ status: 'active' | 'not_found' }> {
+  const params = new URLSearchParams({ payment_id: paymentId });
+  return parseJson<{ status: 'active' | 'not_found' }>(await fetch(`${API_BASE_URL}/api/payments/confirm?${params.toString()}`));
+}
+
 export async function register(login: string, password: string): Promise<{ access_token: string; login: string }> {
   return parseJson<{ access_token: string; login: string }>(
     await fetch(`${API_BASE_URL}/api/auth/register`, {

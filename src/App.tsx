@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
-import { createPayment, fetchActiveJobsCount, fetchJobs, fetchVisitorsToday, respondToJob, saveJob } from './api';
+import { Link, Navigate, Route, Routes, useSearchParams } from 'react-router-dom';
+import { confirmPayment, createPayment, fetchActiveJobsCount, fetchJobs, fetchVisitorsToday, respondToJob, saveJob } from './api';
 import type { Job, JobCategory } from './types';
 import { categories, slogans } from './constants';
 import { useAuth } from './auth/AuthContext';
@@ -191,10 +191,57 @@ function App() {
     </main>
   );
 
+  const PaymentResultPage = () => {
+    const [searchParams] = useSearchParams();
+    const paymentId = searchParams.get('payment_id');
+    const [status, setStatus] = useState<'loading' | 'active' | 'not_found' | 'missing' | 'error'>('loading');
+
+    useEffect(() => {
+      const checkPayment = async () => {
+        if (!paymentId) {
+          setStatus('missing');
+          return;
+        }
+        try {
+          const result = await confirmPayment(paymentId);
+          setStatus(result.status);
+        } catch {
+          setStatus('error');
+        }
+      };
+      void checkPayment();
+    }, [paymentId]);
+
+    return (
+      <main className="container">
+        <Header
+          dark={dark}
+          slogan={slogans[sloganIndex]}
+          visitors={visitors}
+          activeJobs={activeJobs}
+          currentLogin={currentLogin}
+          onLogout={logout}
+          onToggleTheme={() => setDark((value) => !value)}
+        />
+        <div className="card">
+          {status === 'loading' ? <p>Проверяем статус оплаты...</p> : null}
+          {status === 'active' ? <p>Оплата прошла успешно. Объявление опубликовано в ленте.</p> : null}
+          {status === 'not_found' ? <p>Платеж не найден. Попробуйте оплатить снова или обратитесь в поддержку.</p> : null}
+          {status === 'missing' ? <p>Не найден идентификатор платежа в ссылке возврата.</p> : null}
+          {status === 'error' ? <p>Не удалось проверить оплату. Проверьте соединение и попробуйте позже.</p> : null}
+          <Link className="btn" to="/">
+            Вернуться на главную
+          </Link>
+        </div>
+      </main>
+    );
+  };
+
   return (
     <>
       <Routes>
         <Route path="/" element={HomePage} />
+        <Route path="/payment-result" element={<PaymentResultPage />} />
         <Route path="/login" element={<LoginPage onAlert={onAlert} />} />
         <Route path="/register" element={<RegisterPage onAlert={onAlert} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
